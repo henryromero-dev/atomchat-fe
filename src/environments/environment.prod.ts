@@ -1,6 +1,6 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://82.25.79.5:3000/api',
+    apiUrl: 'https://mayajs.com/api',
     appName: 'AtomChat',
     version: '1.0.0',
     auth: {
