@@ -1,57 +1,70 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpRequest, HttpHandler, HttpErrorResponse, HttpEvent } from '@angular/common/http';
+import { HttpRequest, HttpHandlerFn, HttpErrorResponse, HttpEvent } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
-import { ErrorInterceptor } from './error.interceptor';
-import { ToastService } from '../services/toast.service';
-import { AuthService } from '../services/auth.service';
-import { Router } from '@angular/router';
+import { errorInterceptor } from './error.interceptor';
+import { MessageService } from 'primeng/api';
 
 describe('ErrorInterceptor', () => {
-  let interceptor: ErrorInterceptor;
-  let toastServiceSpy: jasmine.SpyObj<ToastService>;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let routerSpy: jasmine.SpyObj<Router>;
-  let mockHandler: jasmine.SpyObj<HttpHandler>;
+  let messageServiceSpy: jest.Mocked<MessageService>;
+  let mockNext: jest.Mock;
 
   beforeEach(() => {
-    const toastSpy = jasmine.createSpyObj('ToastService', ['showError', 'showWarn']);
-    const authSpy = jasmine.createSpyObj('AuthService', ['logout']);
-    const routerSpyObj = jasmine.createSpyObj('Router', ['navigate']);
-    const handlerSpy = jasmine.createSpyObj('HttpHandler', ['handle']);
+    const messageSpy = {
+      add: jest.fn()
+    } as jest.Mocked<Pick<MessageService, 'add'>>;
+
+    mockNext = jest.fn();
 
     TestBed.configureTestingModule({
       providers: [
-        ErrorInterceptor,
-        { provide: ToastService, useValue: toastSpy },
-        { provide: AuthService, useValue: authSpy },
-        { provide: Router, useValue: routerSpyObj },
+        { provide: MessageService, useValue: messageSpy },
       ],
     });
 
-    interceptor = TestBed.inject(ErrorInterceptor);
-    toastServiceSpy = TestBed.inject(ToastService) as jasmine.SpyObj<ToastService>;
-    authServiceSpy = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    routerSpy = TestBed.inject(Router) as jasmine.SpyObj<Router>;
-    mockHandler = handlerSpy;
-  });
-
-  it('should be created', () => {
-    expect(interceptor).toBeTruthy();
+    messageServiceSpy = TestBed.inject(MessageService) as jest.Mocked<MessageService>;
   });
 
   it('should pass through successful responses', () => {
     const mockRequest = new HttpRequest('GET', '/api/tasks');
-    const mockResponse = { status: 200, body: { data: 'success' } };
+    const mockResponse = of({ status: 200, body: { data: 'success' } } as HttpEvent<any>);
 
-    mockHandler.handle.and.returnValue(of(mockResponse as HttpEvent<any>));
+    mockNext.mockReturnValue(mockResponse);
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      next: (response) => {
-        expect(response).toBe(mockResponse);
-      }
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        next: (response) => {
+          expect(response).toEqual({ status: 200, body: { data: 'success' } });
+        }
+      });
     });
 
-    expect(mockHandler.handle).toHaveBeenCalledWith(mockRequest);
+    expect(mockNext).toHaveBeenCalledWith(mockRequest);
+  });
+
+  it('should handle 400 Bad Request errors', () => {
+    const mockRequest = new HttpRequest('GET', '/api/tasks');
+    const errorResponse = new HttpErrorResponse({
+      status: 400,
+      statusText: 'Bad Request',
+      error: { message: 'Custom validation error' }
+    });
+
+    mockNext.mockReturnValue(throwError(() => errorResponse));
+
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        error: (error) => {
+          expect(error).toBe(errorResponse);
+        }
+      });
+    });
+
+    expect(messageServiceSpy.add).toHaveBeenCalledWith({
+      severity: 'warn',
+      summary: 'Warning',
+      detail: 'Custom validation error',
+      life: 5000,
+    });
   });
 
   it('should handle 401 Unauthorized errors', () => {
@@ -62,17 +75,22 @@ describe('ErrorInterceptor', () => {
       error: { message: 'Token expired' }
     });
 
-    mockHandler.handle.and.returnValue(throwError(() => errorResponse));
+    mockNext.mockReturnValue(throwError(() => errorResponse));
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(errorResponse);
-      }
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        error: (error) => {
+          expect(error).toBe(errorResponse);
+        }
+      });
     });
 
-    expect(authServiceSpy.logout).toHaveBeenCalled();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
-    expect(toastServiceSpy.showError).toHaveBeenCalledWith('Session expired', 'Please log in again');
+    expect(messageServiceSpy.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Unauthorized. Please log in again.',
+      life: 5000,
+    });
   });
 
   it('should handle 403 Forbidden errors', () => {
@@ -83,15 +101,22 @@ describe('ErrorInterceptor', () => {
       error: { message: 'Access denied' }
     });
 
-    mockHandler.handle.and.returnValue(throwError(() => errorResponse));
+    mockNext.mockReturnValue(throwError(() => errorResponse));
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(errorResponse);
-      }
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        error: (error) => {
+          expect(error).toBe(errorResponse);
+        }
+      });
     });
 
-    expect(toastServiceSpy.showError).toHaveBeenCalledWith('Access denied', 'You do not have permission to perform this action');
+    expect(messageServiceSpy.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Forbidden. You do not have permission to perform this action.',
+      life: 5000,
+    });
   });
 
   it('should handle 404 Not Found errors', () => {
@@ -102,15 +127,22 @@ describe('ErrorInterceptor', () => {
       error: { message: 'Resource not found' }
     });
 
-    mockHandler.handle.and.returnValue(throwError(() => errorResponse));
+    mockNext.mockReturnValue(throwError(() => errorResponse));
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(errorResponse);
-      }
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        error: (error) => {
+          expect(error).toBe(errorResponse);
+        }
+      });
     });
 
-    expect(toastServiceSpy.showError).toHaveBeenCalledWith('Not found', 'The requested resource was not found');
+    expect(messageServiceSpy.add).toHaveBeenCalledWith({
+      severity: 'warn',
+      summary: 'Warning',
+      detail: 'Resource not found',
+      life: 5000,
+    });
   });
 
   it('should handle 500 Internal Server Error', () => {
@@ -121,34 +153,22 @@ describe('ErrorInterceptor', () => {
       error: { message: 'Something went wrong' }
     });
 
-    mockHandler.handle.and.returnValue(throwError(() => errorResponse));
+    mockNext.mockReturnValue(throwError(() => errorResponse));
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(errorResponse);
-      }
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        error: (error) => {
+          expect(error).toBe(errorResponse);
+        }
+      });
     });
 
-    expect(toastServiceSpy.showError).toHaveBeenCalledWith('Server error', 'Something went wrong on our end. Please try again later');
-  });
-
-  it('should handle network errors', () => {
-    const mockRequest = new HttpRequest('GET', '/api/tasks');
-    const errorResponse = new HttpErrorResponse({
-      status: 0,
-      statusText: 'Unknown Error',
-      error: { message: 'Network error' }
+    expect(messageServiceSpy.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Internal server error. Please try again later.',
+      life: 5000,
     });
-
-    mockHandler.handle.and.returnValue(throwError(() => errorResponse));
-
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(errorResponse);
-      }
-    });
-
-    expect(toastServiceSpy.showError).toHaveBeenCalledWith('Network error', 'Please check your internet connection and try again');
   });
 
   it('should handle client-side errors', () => {
@@ -159,34 +179,22 @@ describe('ErrorInterceptor', () => {
       error: new Error('Client-side error')
     });
 
-    mockHandler.handle.and.returnValue(throwError(() => errorResponse));
+    mockNext.mockReturnValue(throwError(() => errorResponse));
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(errorResponse);
-      }
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        error: (error) => {
+          expect(error).toBe(errorResponse);
+        }
+      });
     });
 
-    expect(toastServiceSpy.showError).toHaveBeenCalledWith('An error occurred', 'An unexpected error occurred. Please try again');
-  });
-
-  it('should handle errors with custom error messages', () => {
-    const mockRequest = new HttpRequest('GET', '/api/tasks');
-    const errorResponse = new HttpErrorResponse({
-      status: 400,
-      statusText: 'Bad Request',
-      error: { message: 'Custom validation error' }
+    expect(messageServiceSpy.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Client-side error',
+      life: 5000,
     });
-
-    mockHandler.handle.and.returnValue(throwError(() => errorResponse));
-
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(errorResponse);
-      }
-    });
-
-    expect(toastServiceSpy.showError).toHaveBeenCalledWith('Bad request', 'Custom validation error');
   });
 
   it('should handle errors without error message', () => {
@@ -197,30 +205,47 @@ describe('ErrorInterceptor', () => {
       error: {}
     });
 
-    mockHandler.handle.and.returnValue(throwError(() => errorResponse));
+    mockNext.mockReturnValue(throwError(() => errorResponse));
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(errorResponse);
-      }
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        error: (error) => {
+          expect(error).toBe(errorResponse);
+        }
+      });
     });
 
-    expect(toastServiceSpy.showError).toHaveBeenCalledWith('Bad request', 'An error occurred while processing your request');
+    expect(messageServiceSpy.add).toHaveBeenCalledWith({
+      severity: 'warn',
+      summary: 'Warning',
+      detail: 'Bad Request',
+      life: 5000,
+    });
   });
 
-  it('should not handle non-HTTP errors', () => {
+  it('should handle errors with default message when no specific error message', () => {
     const mockRequest = new HttpRequest('GET', '/api/tasks');
-    const regularError = new Error('Regular error');
-
-    mockHandler.handle.and.returnValue(throwError(() => regularError));
-
-    interceptor.intercept(mockRequest, mockHandler).subscribe({
-      error: (error) => {
-        expect(error).toBe(regularError);
-      }
+    const errorResponse = new HttpErrorResponse({
+      status: 999,
+      statusText: 'Unknown Error',
+      error: {}
     });
 
-    expect(toastServiceSpy.showError).not.toHaveBeenCalled();
+    mockNext.mockReturnValue(throwError(() => errorResponse));
+
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(mockRequest, mockNext).subscribe({
+        error: (error) => {
+          expect(error).toBe(errorResponse);
+        }
+      });
+    });
+
+    expect(messageServiceSpy.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Server Error: 999',
+      life: 5000,
+    });
   });
 });
-

@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { BehaviorSubject } from 'rxjs';
 import { LoadingService } from './loading.service';
 
 describe('LoadingService', () => {
@@ -17,36 +16,36 @@ describe('LoadingService', () => {
   });
 
   it('should initialize with loading false', () => {
-    expect(service.getIsLoading()).toBeFalse();
+    expect(service.getLoading()).toBe(false);
   });
 
   it('should set loading to true', () => {
     service.setLoading(true);
-    expect(service.getIsLoading()).toBeTrue();
+    expect(service.getLoading()).toBe(true);
   });
 
   it('should set loading to false', () => {
     service.setLoading(true);
     service.setLoading(false);
-    expect(service.getIsLoading()).toBeFalse();
+    expect(service.getLoading()).toBe(false);
   });
 
   it('should emit loading state changes', () => {
     let emittedValue = false;
-    service.isLoading$.subscribe((loading) => {
+    service.loading$.subscribe((loading) => {
       emittedValue = loading;
     });
 
     service.setLoading(true);
-    expect(emittedValue).toBeTrue();
+    expect(emittedValue).toBe(true);
 
     service.setLoading(false);
-    expect(emittedValue).toBeFalse();
+    expect(emittedValue).toBe(false);
   });
 
   it('should handle multiple loading state changes', () => {
     const emittedValues: boolean[] = [];
-    service.isLoading$.subscribe((loading) => {
+    service.loading$.subscribe((loading) => {
       emittedValues.push(loading);
     });
 
@@ -60,18 +59,18 @@ describe('LoadingService', () => {
 
   it('should maintain loading state across multiple calls', () => {
     service.setLoading(true);
-    expect(service.getIsLoading()).toBeTrue();
+    expect(service.getLoading()).toBe(true);
 
     service.setLoading(true);
-    expect(service.getIsLoading()).toBeTrue();
+    expect(service.getLoading()).toBe(true);
 
     service.setLoading(false);
-    expect(service.getIsLoading()).toBeFalse();
+    expect(service.getLoading()).toBe(false);
   });
 
   it('should handle rapid state changes', () => {
     const emittedValues: boolean[] = [];
-    service.isLoading$.subscribe((loading) => {
+    service.loading$.subscribe((loading) => {
       emittedValues.push(loading);
     });
 
@@ -81,7 +80,7 @@ describe('LoadingService', () => {
     }
 
     expect(emittedValues.length).toBe(11); // Initial false + 10 changes
-    expect(emittedValues[emittedValues.length - 1]).toBeFalse();
+    expect(emittedValues[emittedValues.length - 1]).toBe(false);
   });
 
   it('should be thread-safe for concurrent access', () => {
@@ -101,39 +100,55 @@ describe('LoadingService', () => {
 
     return Promise.all(promises).then(() => {
       // Final state should be consistent
-      expect(typeof service.getIsLoading()).toBe('boolean');
+      expect(typeof service.getLoading()).toBe('boolean');
     });
   });
 
   it('should handle edge cases', () => {
-    // Test with undefined
+    // Test with undefined - BehaviorSubject will emit undefined
     service.setLoading(undefined as any);
-    expect(service.getIsLoading()).toBeFalse();
+    expect(service.getLoading()).toBe(undefined);
 
-    // Test with null
+    // Test with null - BehaviorSubject will emit null
     service.setLoading(null as any);
-    expect(service.getIsLoading()).toBeFalse();
+    expect(service.getLoading()).toBe(null);
 
-    // Test with string
+    // Test with string 'true' - BehaviorSubject will emit the string as-is
     service.setLoading('true' as any);
-    expect(service.getIsLoading()).toBeTrue();
+    expect(service.getLoading()).toBe('true');
   });
 
   it('should maintain observable subscription after service destruction', () => {
     let emittedValue = false;
-    const subscription = service.isLoading$.subscribe((loading) => {
+    const subscription = service.loading$.subscribe((loading) => {
       emittedValue = loading;
     });
 
     service.setLoading(true);
-    expect(emittedValue).toBeTrue();
+    expect(emittedValue).toBe(true);
 
     // Simulate service destruction
     service = null as any;
 
     // Subscription should still work
-    expect(emittedValue).toBeTrue();
+    expect(emittedValue).toBe(true);
+    subscription.unsubscribe();
+  });
+
+  it('should provide loading observable', () => {
+    expect(service.loading$).toBeDefined();
+    
+    let emittedValue: boolean | undefined;
+    const subscription = service.loading$.subscribe((loading) => {
+      emittedValue = loading;
+    });
+
+    service.setLoading(true);
+    expect(emittedValue).toBe(true);
+
+    service.setLoading(false);
+    expect(emittedValue).toBe(false);
+
     subscription.unsubscribe();
   });
 });
-

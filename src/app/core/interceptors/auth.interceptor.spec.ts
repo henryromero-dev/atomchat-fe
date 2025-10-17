@@ -1,76 +1,85 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
+import { HttpRequest, HttpEvent } from '@angular/common/http';
 import { of } from 'rxjs';
-import { AuthInterceptor } from './auth.interceptor';
-import { AuthService } from '../services/auth.service';
+import { authInterceptor } from './auth.interceptor';
+import { AuthApplicationService } from '../../application/services/auth-application.service';
 
 describe('AuthInterceptor', () => {
-  let interceptor: AuthInterceptor;
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let mockHandler: jasmine.SpyObj<HttpHandler>;
+  let authServiceSpy: jest.Mocked<AuthApplicationService>;
+  let mockNext: jest.Mock;
 
   beforeEach(() => {
-    const authSpy = jasmine.createSpyObj('AuthService', ['getToken']);
-    const handlerSpy = jasmine.createSpyObj('HttpHandler', ['handle']);
+    const authSpy = {
+      getToken: jest.fn(),
+      logout: jest.fn()
+    } as jest.Mocked<Pick<AuthApplicationService, 'getToken' | 'logout'>>;
+
+    mockNext = jest.fn();
 
     TestBed.configureTestingModule({
       providers: [
-        AuthInterceptor,
-        { provide: AuthService, useValue: authSpy },
+        { provide: AuthApplicationService, useValue: authSpy },
       ],
     });
 
-    interceptor = TestBed.inject(AuthInterceptor);
-    authServiceSpy = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    mockHandler = handlerSpy;
-  });
-
-  it('should be created', () => {
-    expect(interceptor).toBeTruthy();
+    authServiceSpy = TestBed.inject(AuthApplicationService) as jest.Mocked<AuthApplicationService>;
   });
 
   it('should add Authorization header when token is available', () => {
     const mockToken = 'mock-jwt-token';
     const mockRequest = new HttpRequest('GET', '/api/tasks');
-    const mockResponse = new HttpRequest('GET', '/api/tasks', {
-      headers: mockRequest.headers.set('Authorization', `Bearer ${mockToken}`)
+    const mockResponse = of({} as HttpEvent<any>);
+
+    authServiceSpy.getToken.mockReturnValue(mockToken);
+    mockNext.mockReturnValue(mockResponse);
+
+    TestBed.runInInjectionContext(() => {
+      TestBed.runInInjectionContext(() => {
+      authInterceptor(mockRequest, mockNext).subscribe();
+    });
     });
 
-    authServiceSpy.getToken.and.returnValue(mockToken);
-    mockHandler.handle.and.returnValue(of({} as HttpEvent<any>));
-
-    interceptor.intercept(mockRequest, mockHandler).subscribe();
-
     expect(authServiceSpy.getToken).toHaveBeenCalled();
-    expect(mockHandler.handle).toHaveBeenCalledWith(jasmine.objectContaining({
-      headers: jasmine.objectContaining({
-        Authorization: `Bearer ${mockToken}`
+    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+      headers: expect.objectContaining({
+        lazyUpdate: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'Authorization',
+            value: `Bearer ${mockToken}`
+          })
+        ])
       })
     }));
   });
 
   it('should not add Authorization header when token is not available', () => {
     const mockRequest = new HttpRequest('GET', '/api/tasks');
+    const mockResponse = of({} as HttpEvent<any>);
 
-    authServiceSpy.getToken.and.returnValue(null);
-    mockHandler.handle.and.returnValue(of({} as HttpEvent<any>));
+    authServiceSpy.getToken.mockReturnValue(null);
+    mockNext.mockReturnValue(mockResponse);
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe();
+    TestBed.runInInjectionContext(() => {
+      authInterceptor(mockRequest, mockNext).subscribe();
+    });
 
     expect(authServiceSpy.getToken).toHaveBeenCalled();
-    expect(mockHandler.handle).toHaveBeenCalledWith(mockRequest);
+    expect(mockNext).toHaveBeenCalledWith(mockRequest);
   });
 
   it('should not add Authorization header when token is empty string', () => {
     const mockRequest = new HttpRequest('GET', '/api/tasks');
+    const mockResponse = of({} as HttpEvent<any>);
 
-    authServiceSpy.getToken.and.returnValue('');
-    mockHandler.handle.and.returnValue(of({} as HttpEvent<any>));
+    authServiceSpy.getToken.mockReturnValue('');
+    mockNext.mockReturnValue(mockResponse);
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe();
+    TestBed.runInInjectionContext(() => {
+      authInterceptor(mockRequest, mockNext).subscribe();
+    });
 
     expect(authServiceSpy.getToken).toHaveBeenCalled();
-    expect(mockHandler.handle).toHaveBeenCalledWith(mockRequest);
+    expect(mockNext).toHaveBeenCalledWith(mockRequest);
   });
 
   it('should preserve existing headers when adding Authorization', () => {
@@ -78,16 +87,27 @@ describe('AuthInterceptor', () => {
     const mockRequest = new HttpRequest('GET', '/api/tasks', {
       headers: new HttpRequest('GET', '/api/tasks').headers.set('Content-Type', 'application/json')
     });
+    const mockResponse = of({} as HttpEvent<any>);
 
-    authServiceSpy.getToken.and.returnValue(mockToken);
-    mockHandler.handle.and.returnValue(of({} as HttpEvent<any>));
+    authServiceSpy.getToken.mockReturnValue(mockToken);
+    mockNext.mockReturnValue(mockResponse);
 
-    interceptor.intercept(mockRequest, mockHandler).subscribe();
+    TestBed.runInInjectionContext(() => {
+      authInterceptor(mockRequest, mockNext).subscribe();
+    });
 
-    expect(mockHandler.handle).toHaveBeenCalledWith(jasmine.objectContaining({
-      headers: jasmine.objectContaining({
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${mockToken}`
+    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+      headers: expect.objectContaining({
+        lazyUpdate: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'Content-Type',
+            value: 'application/json'
+          }),
+          expect.objectContaining({
+            name: 'Authorization',
+            value: `Bearer ${mockToken}`
+          })
+        ])
       })
     }));
   });
@@ -95,17 +115,25 @@ describe('AuthInterceptor', () => {
   it('should handle different HTTP methods', () => {
     const mockToken = 'mock-jwt-token';
     const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
+    const mockResponse = of({} as HttpEvent<any>);
 
-    authServiceSpy.getToken.and.returnValue(mockToken);
-    mockHandler.handle.and.returnValue(of({} as HttpEvent<any>));
+    authServiceSpy.getToken.mockReturnValue(mockToken);
+    mockNext.mockReturnValue(mockResponse);
 
     methods.forEach(method => {
       const mockRequest = new HttpRequest(method, '/api/tasks');
-      interceptor.intercept(mockRequest, mockHandler).subscribe();
+      TestBed.runInInjectionContext(() => {
+      authInterceptor(mockRequest, mockNext).subscribe();
+    });
 
-      expect(mockHandler.handle).toHaveBeenCalledWith(jasmine.objectContaining({
-        headers: jasmine.objectContaining({
-          Authorization: `Bearer ${mockToken}`
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+        headers: expect.objectContaining({
+          lazyUpdate: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'Authorization',
+              value: `Bearer ${mockToken}`
+            })
+          ])
         })
       }));
     });
@@ -114,17 +142,25 @@ describe('AuthInterceptor', () => {
   it('should handle different URLs', () => {
     const mockToken = 'mock-jwt-token';
     const urls = ['/api/tasks', '/api/users', '/api/auth/profile', 'https://external-api.com/data'];
+    const mockResponse = of({} as HttpEvent<any>);
 
-    authServiceSpy.getToken.and.returnValue(mockToken);
-    mockHandler.handle.and.returnValue(of({} as HttpEvent<any>));
+    authServiceSpy.getToken.mockReturnValue(mockToken);
+    mockNext.mockReturnValue(mockResponse);
 
     urls.forEach(url => {
       const mockRequest = new HttpRequest('GET', url);
-      interceptor.intercept(mockRequest, mockHandler).subscribe();
+      TestBed.runInInjectionContext(() => {
+      authInterceptor(mockRequest, mockNext).subscribe();
+    });
 
-      expect(mockHandler.handle).toHaveBeenCalledWith(jasmine.objectContaining({
-        headers: jasmine.objectContaining({
-          Authorization: `Bearer ${mockToken}`
+      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+        headers: expect.objectContaining({
+          lazyUpdate: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'Authorization',
+              value: `Bearer ${mockToken}`
+            })
+          ])
         })
       }));
     });

@@ -1,33 +1,40 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { AuthApplicationService } from '../../application/services/auth-application.service';
 import { authGuard } from './auth.guard';
 
 describe('AuthGuard', () => {
-  let mockAuthService: jasmine.SpyObj<AuthService>;
-  let mockRouter: jasmine.SpyObj<Router>;
+  let mockAuthService: jest.Mocked<AuthApplicationService>;
+  let mockRouter: jest.Mocked<Router>;
 
   beforeEach(() => {
-    const authServiceSpy = jasmine.createSpyObj('AuthService', ['isAuthenticated']);
-    const routerSpy = jasmine.createSpyObj('Router', ['createUrlTree']);
+    const authServiceSpy = {
+      isAuthenticated: jest.fn()
+    } as jest.Mocked<Pick<AuthApplicationService, 'isAuthenticated'>>;
+
+    const routerSpy = {
+      createUrlTree: jest.fn()
+    } as jest.Mocked<Pick<Router, 'createUrlTree'>>;
 
     TestBed.configureTestingModule({
       providers: [
-        { provide: AuthService, useValue: authServiceSpy },
+        { provide: AuthApplicationService, useValue: authServiceSpy },
         { provide: Router, useValue: routerSpy },
       ],
     });
 
-    mockAuthService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    mockRouter = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+    mockAuthService = TestBed.inject(AuthApplicationService) as jest.Mocked<AuthApplicationService>;
+    mockRouter = TestBed.inject(Router) as jest.Mocked<Router>;
   });
 
   it('should return true when user is authenticated', () => {
     // Arrange
-    mockAuthService.isAuthenticated.and.returnValue(true);
+    mockAuthService.isAuthenticated.mockReturnValue(true);
 
     // Act
-    const result = authGuard();
+    const result = TestBed.runInInjectionContext(() => {
+      return authGuard(null as any, null as any);
+    });
 
     // Assert
     expect(result).toBe(true);
@@ -38,11 +45,13 @@ describe('AuthGuard', () => {
   it('should redirect to login when user is not authenticated', () => {
     // Arrange
     const mockUrlTree = { toString: () => '/login' };
-    mockAuthService.isAuthenticated.and.returnValue(false);
-    mockRouter.createUrlTree.and.returnValue(mockUrlTree as any);
+    mockAuthService.isAuthenticated.mockReturnValue(false);
+    mockRouter.createUrlTree.mockReturnValue(mockUrlTree as any);
 
     // Act
-    const result = authGuard();
+    const result = TestBed.runInInjectionContext(() => {
+      return authGuard(null as any, null as any);
+    });
 
     // Assert
     expect(result).toBe(mockUrlTree);
@@ -50,12 +59,14 @@ describe('AuthGuard', () => {
     expect(mockRouter.createUrlTree).toHaveBeenCalledWith(['/login']);
   });
 
-  it('should call isAuthenticated method from AuthService', () => {
+  it('should call isAuthenticated method from AuthApplicationService', () => {
     // Arrange
-    mockAuthService.isAuthenticated.and.returnValue(true);
+    mockAuthService.isAuthenticated.mockReturnValue(true);
 
     // Act
-    authGuard();
+    TestBed.runInInjectionContext(() => {
+      authGuard(null as any, null as any);
+    });
 
     // Assert
     expect(mockAuthService.isAuthenticated).toHaveBeenCalledTimes(1);

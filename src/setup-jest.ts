@@ -1,4 +1,18 @@
 import '@testing-library/jest-dom';
+import 'zone.js';
+import 'zone.js/testing';
+import { TestBed } from '@angular/core/testing';
+import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
+import { ComponentFixture } from '@angular/core/testing';
+
+// Initialize Angular testing environment
+TestBed.initTestEnvironment(
+  BrowserDynamicTestingModule,
+  platformBrowserDynamicTesting()
+);
+
+// Add resolveComponentResources to handle standalone components
+TestBed.configureTestingModule({}).compileComponents();
 
 // Mock ResizeObserver
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
@@ -41,4 +55,15 @@ Object.defineProperty(window, 'getComputedStyle', {
     getPropertyValue: () => '',
   }),
 });
+
+// Mock jasmine for Jest compatibility
+global.jasmine = {
+  createSpyObj: jest.fn((name, methods) => {
+    const spyObj: any = {};
+    methods.forEach((method: string) => {
+      spyObj[method] = jest.fn();
+    });
+    return spyObj;
+  })
+};
 

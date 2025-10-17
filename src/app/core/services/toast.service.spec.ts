@@ -61,16 +61,19 @@ describe('ToastService', () => {
     service.showSuccess('Message 1');
     service.showError('Message 2');
     
+    let messageCount = 0;
     service.messages$.subscribe(messages => {
-      expect(messages.length).toBe(2);
-      
-      const messageId = messages[0].id;
-      service.removeMessage(messageId);
-      
-      service.messages$.subscribe(updatedMessages => {
-        expect(updatedMessages.length).toBe(1);
-        expect(updatedMessages[0].summary).toBe('Message 2');
-      });
+      messageCount++;
+      if (messageCount === 1) {
+        // Initial state with 2 messages
+        expect(messages.length).toBe(2);
+        const messageId = messages[0].id;
+        service.removeMessage(messageId);
+      } else if (messageCount === 2) {
+        // After removal, should have 1 message
+        expect(messages.length).toBe(1);
+        expect(messages[0].summary).toBe('Message 2');
+      }
     });
   });
 
@@ -79,14 +82,17 @@ describe('ToastService', () => {
     service.showError('Message 2');
     service.showInfo('Message 3');
     
+    let messageCount = 0;
     service.messages$.subscribe(messages => {
-      expect(messages.length).toBe(3);
-      
-      service.clearAll();
-      
-      service.messages$.subscribe(clearedMessages => {
-        expect(clearedMessages.length).toBe(0);
-      });
+      messageCount++;
+      if (messageCount === 1) {
+        // Initial state with 3 messages
+        expect(messages.length).toBe(3);
+        service.clearAll();
+      } else if (messageCount === 2) {
+        // After clearing, should have 0 messages
+        expect(messages.length).toBe(0);
+      }
     });
   });
 

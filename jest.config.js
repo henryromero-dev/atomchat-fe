@@ -7,18 +7,19 @@ module.exports = {
     '^@core/(.*)$': '<rootDir>/src/app/core/$1',
     '^@shared/(.*)$': '<rootDir>/src/app/shared/$1',
     '^@features/(.*)$': '<rootDir>/src/app/features/$1',
-    '^@environments/(.*)$': '<rootDir>/src/environments/$1'
+    '^@environments/(.*)$': '<rootDir>/src/environments/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
   transform: {
     '^.+\\.(ts|mjs|js|html)$': ['ts-jest', {
       tsconfig: 'tsconfig.spec.json',
       stringifyContentPathRegex: '\\.(html|svg)$',
       isolatedModules: true,
-      useESM: true
+      useESM: false
     }]
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@angular|@ngrx|primeng|primeicons).*)'
+    'node_modules/(?!(@angular|@ngrx|primeng|primeicons|@testing-library).*)'
   ],
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -33,13 +34,9 @@ module.exports = {
     '<rootDir>/src/**/*.spec.ts'
   ],
   moduleFileExtensions: ['ts', 'html', 'js', 'json', 'mjs'],
-  extensionsToTreatAsEsm: ['.ts'],
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.spec.json',
-      isolatedModules: true,
-      useESM: true
-    }
-  }
+  extensionsToTreatAsEsm: [],
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons']
+  },
 };
 
