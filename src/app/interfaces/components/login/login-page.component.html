@@ -1,0 +1,51 @@
+<div class="min-vh-100 d-flex align-items-center justify-content-center p-3"
+    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" role="main" aria-label="Login page">
+    <div class="w-100 p-4 bg-white rounded-3" style="max-width: 400px;">
+        <div [style]="{ width: '100%' }" aria-labelledby="login-header">
+            <div class="text-center p-3" id="login-header">
+                <h1 class="h4 mb-2 text-dark">Sign In</h1>
+                <p class="text-muted mb-0">Enter your email to continue</p>
+            </div>
+
+            <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="d-flex flex-column gap-3" role="form"
+                aria-label="Login form">
+                <div class="d-flex flex-column gap-2">
+                    <label for="email" class="form-label fw-medium text-dark">Email Address</label>
+                    <input id="email" type="email" pInputText formControlName="email" placeholder="Enter your email"
+                        class="form-control" [class.is-invalid]="isFieldInvalid('email')" aria-describedby="email-error"
+                        aria-required="true" />
+                    <small *ngIf="isFieldInvalid('email')" class="text-danger" id="email-error" role="alert">
+                        {{ getFieldError('email') }}
+                    </small>
+                </div>
+
+                <p-message *ngIf="(authState$ | async)?.error" severity="error"
+                    [text]="(authState$ | async)?.error || ''" role="alert" aria-live="polite"></p-message>
+
+                <div class="d-flex">
+                    <p-button type="submit" label="Continue" [loading]="(authState$ | async)?.isLoading || false"
+                        [disabled]="loginForm.invalid || ((authState$ | async)?.isLoading || false)" class="w-100"
+                        aria-label="Continue with email"></p-button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Dialogo de confirmación para crear usuario -->
+<p-dialog header="Crear Usuario" [(visible)]="showCreateUserDialog" [modal]="true" [closable]="false" [style]="{width: '400px'}" 
+    [draggable]="false" [resizable]="false">
+    <div class="d-flex flex-column gap-3">
+        <p class="mb-0">
+            We can't find an account with this email. <strong>{{ loginForm.value.email }}</strong>.
+            Do you want to create a new account?
+        </p>
+        <div class="d-flex gap-2 justify-content-end">
+            <p-button label="Cancelar" severity="secondary" (onClick)="onCancelCreateUser()" 
+                [disabled]="(authState$ | async)?.isLoading || false"></p-button>
+            <p-button label="Create Account" (onClick)="onConfirmCreateUser()" 
+                [loading]="(authState$ | async)?.isLoading || false"
+                [disabled]="(authState$ | async)?.isLoading || false"></p-button>
+        </div>
+    </div>
+</p-dialog>

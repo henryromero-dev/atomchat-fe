@@ -1,0 +1,26 @@
+:host ::ng-deep .badge {
+    &.bg-success {
+        background-color: #198754 !important;
+    }
+
+    &.bg-warning {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }
+}
+
+.badge {
+    width: 80px;
+}
+
+:host ::ng-deep .confirm--dialog {
+    button {
+        margin-right: 10px;
+    }
+}
+
+:host ::ng-deep .p-card {
+    .p-card-body {
+        padding: 0;
+    }
+}

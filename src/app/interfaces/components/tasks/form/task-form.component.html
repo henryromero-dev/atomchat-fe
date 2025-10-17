@@ -1,0 +1,32 @@
+<p-dialog [header]="formTitle" [(visible)]="visible" [modal]="true" [closable]="true" [draggable]="false"
+    [resizable]="false" [style]="{ width: '500px' }" (onHide)="onCancel()">
+
+    <form [formGroup]="taskForm" (ngSubmit)="onSubmit()" class="d-flex flex-column gap-3">
+        <div class="d-flex flex-column gap-2">
+            <label for="task-title" class="form-label fw-medium text-dark">Title</label>
+            <input id="task-title" type="text" pInputText formControlName="title" placeholder="Enter task title"
+                class="form-control" [class.is-invalid]="isFieldInvalid('title')" aria-describedby="task-title-error"
+                aria-required="true" />
+            <small *ngIf="isFieldInvalid('title')" class="text-danger" id="task-title-error" role="alert">
+                {{ getFieldError('title') }}
+            </small>
+        </div>
+
+        <div class="d-flex flex-column gap-2">
+            <label for="task-description" class="form-label fw-medium text-dark">Description</label>
+            <textarea id="task-description" pInputTextarea formControlName="description"
+                placeholder="Enter task description" rows="4" class="form-control"
+                [class.is-invalid]="isFieldInvalid('description')" aria-describedby="task-description-error"></textarea>
+            <small *ngIf="isFieldInvalid('description')" class="text-danger" id="task-description-error" role="alert">
+                {{ getFieldError('description') }}
+            </small>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+            <p-button type="submit" [label]="submitButtonLabel" [disabled]="taskForm.invalid"
+                [attr.aria-label]="taskToEdit?.id ? 'Update the task' : 'Create the task'"></p-button>
+            <p-button type="button" [label]="cancelButtonLabel" severity="secondary" (onClick)="onCancel()"
+                [attr.aria-label]="taskToEdit?.id ? 'Cancel task update' : 'Cancel task creation'"></p-button>
+        </div>
+    </form>
+</p-dialog>
