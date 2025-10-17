@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -47,7 +47,7 @@ import { LoginRequest, RegisterRequest } from '../../../domain/entities';
     templateUrl: './login-page.component.html',
     styleUrl: './login-page.component.scss',
 })
-export class LoginPageComponent {
+export class LoginPageComponent implements OnInit {
     /** Authentication service for login/register operations */
     private readonly authApplicationService: AuthApplicationService = inject(AuthApplicationService);
     
@@ -70,6 +70,16 @@ export class LoginPageComponent {
         this.loginForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]],
         });
+    }
+
+    /**
+     * Component initialization
+     * Resets the form and dialog state when the component is loaded
+     */
+    public ngOnInit(): void {
+        // Reset form and close any open dialogs when navigating to login page
+        this.loginForm.reset();
+        this.showCreateUserDialog = false;
     }
 
     /**

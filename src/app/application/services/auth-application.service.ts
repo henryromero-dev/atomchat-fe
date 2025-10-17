@@ -106,12 +106,8 @@ export class AuthApplicationService {
     public logout(): void {
         this.clearToken();
         this.clearUser();
-        this.authStateSubject.next(new AuthState(
-            null,
-            false,
-            false,
-            null
-        ));
+        // Reset to initial state to clear any loading or error states
+        this.authStateSubject.next(this.initialState);
         this.router.navigate(['/login']);
     }
 
