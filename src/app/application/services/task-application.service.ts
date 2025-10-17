@@ -54,29 +54,50 @@ export interface TaskState {
     providedIn: 'root'
 })
 export class TaskApplicationService {
+    /** Initial state for task operations */
     private readonly initialState: TaskState = {
         tasks: [],
         isLoading: false,
         error: null,
     };
 
+    /** BehaviorSubject for managing task state */
     private readonly stateSubject: BehaviorSubject<TaskState> = new BehaviorSubject<TaskState>(this.initialState);
+    
+    /** Public observable for state changes */
     public readonly state$: Observable<TaskState> = this.stateSubject.asObservable();
 
     constructor(@Inject(TASK_REPOSITORY) private readonly taskRepository: TaskRepository) { }
 
+    /**
+     * Gets the current tasks observable
+     * @returns Observable stream of tasks array
+     */
     public getTasks(): Observable<Task[]> {
         return this.state$.pipe(map((state: TaskState) => state.tasks));
     }
 
+    /**
+     * Gets the loading state observable
+     * @returns Observable stream of loading boolean
+     */
     public getIsLoading(): Observable<boolean> {
         return this.state$.pipe(map((state: TaskState) => state.isLoading));
     }
 
+    /**
+     * Gets the error state observable
+     * @returns Observable stream of error message or null
+     */
     public getError(): Observable<string | null> {
         return this.state$.pipe(map((state: TaskState) => state.error));
     }
 
+    /**
+     * Loads tasks for a specific user
+     * Updates the state with fetched tasks or error
+     * @param userId - ID of the user whose tasks to load
+     */
     public loadTasks(userId: string): void {
         this.setLoading(true);
         this.clearError();
@@ -93,6 +114,11 @@ export class TaskApplicationService {
         ).subscribe();
     }
 
+    /**
+     * Creates a new task
+     * @param request - Task creation request
+     * @returns Observable of the created task
+     */
     public createTask(request: CreateTaskRequest): Observable<Task> {
         this.setLoading(true);
         this.clearError();
@@ -111,6 +137,11 @@ export class TaskApplicationService {
         );
     }
 
+    /**
+     * Updates an existing task
+     * @param request - Task update request
+     * @returns Observable of the updated task
+     */
     public updateTask(request: UpdateTaskRequest): Observable<Task> {
         this.setLoading(true);
         this.clearError();
@@ -133,6 +164,11 @@ export class TaskApplicationService {
         );
     }
 
+    /**
+     * Deletes a task by ID
+     * @param taskId - ID of the task to delete
+     * @returns Observable of void
+     */
     public deleteTask(taskId: string): Observable<void> {
         this.setLoading(true);
         this.clearError();
@@ -151,6 +187,11 @@ export class TaskApplicationService {
         );
     }
 
+    /**
+     * Toggles task completion status
+     * @param taskId - ID of the task to toggle
+     * @returns Observable of the updated task
+     */
     public toggleTaskCompletion(taskId: string): Observable<Task> {
         this.setLoading(true);
         this.clearError();
@@ -173,20 +214,35 @@ export class TaskApplicationService {
         );
     }
 
+    /**
+     * Updates the task state with partial state changes
+     * @param partialState - Partial state object to merge
+     */
     private updateState(partialState: Partial<TaskState>): void {
         const currentState: TaskState = this.stateSubject.value;
         const newState: TaskState = { ...currentState, ...partialState };
         this.stateSubject.next(newState);
     }
 
+    /**
+     * Sets the loading state
+     * @param loading - Loading state boolean
+     */
     private setLoading(loading: boolean): void {
         this.updateState({ isLoading: loading });
     }
 
+    /**
+     * Sets an error state
+     * @param error - Error message string
+     */
     private setError(error: string): void {
         this.updateState({ error, isLoading: false });
     }
 
+    /**
+     * Clears the current error state
+     */
     private clearError(): void {
         this.updateState({ error: null });
     }
