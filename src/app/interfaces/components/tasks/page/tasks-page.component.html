@@ -140,7 +140,7 @@
     <app-task-form 
         [visible]="showTaskForm"
         [taskToEdit]="editingTask"
-        (visibleChange)="showTaskForm = $event"
+        (visibleChange)="hideTaskForm()"
         (taskSubmit)="onTaskSubmit($event)">
     </app-task-form>
 </div>
