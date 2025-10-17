@@ -1,6 +1,6 @@
 export const environment = {
     production: true,
-    apiUrl: 'http://localhost:3000/api',
+    apiUrl: '82.25.79.5:3000/api',
     appName: 'AtomChat',
     version: '1.0.0',
     auth: {
