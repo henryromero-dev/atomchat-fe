@@ -9,8 +9,10 @@ Welcome to the AtomChat Frontend documentation. This document provides comprehen
 - [Components](./components.md)
 - [Services](./services.md)
 - [Domain Models](./domain-models.md)
+- [API Reference](./api-reference.md)
 - [Development Guide](./development.md)
 - [Testing](./testing.md)
+- [Deployment](./deployment.md)
 
 ## Quick Overview
 

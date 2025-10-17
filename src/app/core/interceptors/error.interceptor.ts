@@ -5,6 +5,24 @@ import { inject } from '@angular/core';
 
 import { MessageService } from 'primeng/api';
 
+/**
+ * ErrorInterceptor - HTTP interceptor for centralized error handling
+ * 
+ * This interceptor catches HTTP errors and displays user-friendly error messages
+ * using PrimeNG's MessageService. It handles different HTTP status codes and
+ * provides appropriate error messages and severity levels.
+ * 
+ * Features:
+ * - Centralized error handling for all HTTP requests
+ * - User-friendly error messages
+ * - Different severity levels based on error type
+ * - Integration with PrimeNG MessageService
+ * - Handles both client-side and server-side errors
+ * 
+ * @param req - HTTP request object
+ * @param next - Next handler in the interceptor chain
+ * @returns Observable of HTTP response
+ */
 export function errorInterceptor(req: HttpRequest<any>, next: HttpHandlerFn): Observable<any> {
   const messageService = inject(MessageService);
 
@@ -16,6 +34,11 @@ export function errorInterceptor(req: HttpRequest<any>, next: HttpHandlerFn): Ob
   );
 }
 
+/**
+ * Handles HTTP errors and displays appropriate user messages
+ * @param error - HTTP error response
+ * @param messageService - PrimeNG message service for displaying notifications
+ */
 function handleError(error: HttpErrorResponse, messageService: MessageService): void {
   let errorMessage = 'An unexpected error occurred';
   let severity: 'error' | 'warn' | 'info' | 'success' = 'error';
@@ -76,6 +99,11 @@ function handleError(error: HttpErrorResponse, messageService: MessageService): 
   });
 }
 
+/**
+ * Gets the appropriate summary text for error severity
+ * @param severity - Error severity level
+ * @returns Summary text for the error
+ */
 function getErrorSummary(severity: string): string {
   switch (severity) {
     case 'warn':
