@@ -12,6 +12,25 @@ import { DialogModule } from 'primeng/dialog';
 import { AuthApplicationService } from '../../../application/services';
 import { LoginRequest, RegisterRequest } from '../../../domain/entities';
 
+/**
+ * LoginPageComponent - Authentication page component
+ * 
+ * This component handles user authentication including login and registration.
+ * It provides a simple email-based authentication system where users can either
+ * log in with an existing email or register a new account.
+ * 
+ * Features:
+ * - Email-based authentication
+ * - User registration for new accounts
+ * - Form validation with error messages
+ * - Loading states during authentication
+ * - Automatic navigation after successful authentication
+ * 
+ * @example
+ * ```html
+ * <app-login-page></app-login-page>
+ * ```
+ */
 @Component({
     selector: 'app-login-page',
     standalone: true,
@@ -29,13 +48,22 @@ import { LoginRequest, RegisterRequest } from '../../../domain/entities';
     styleUrl: './login-page.component.scss',
 })
 export class LoginPageComponent {
+    /** Authentication service for login/register operations */
     private readonly authApplicationService: AuthApplicationService = inject(AuthApplicationService);
+    
+    /** Router service for navigation */
     private readonly router: Router = inject(Router);
+    
+    /** Form builder for reactive forms */
     private readonly fb: FormBuilder = inject(FormBuilder);
 
+    /** Reactive form for login input */
     public readonly loginForm: FormGroup;
 
+    /** Observable stream of authentication state */
     public readonly authState$ = this.authApplicationService.getAuthState();
+    
+    /** Controls user registration dialog visibility */
     public showCreateUserDialog: boolean = false;
 
     constructor() {
@@ -44,6 +72,10 @@ export class LoginPageComponent {
         });
     }
 
+    /**
+     * Handles login form submission
+     * Attempts to log in the user with the provided email
+     */
     public onSubmit(): void {
         if (this.loginForm.valid) {
             const loginRequest: LoginRequest = new LoginRequest(this.loginForm.value.email);
@@ -63,6 +95,10 @@ export class LoginPageComponent {
         }
     }
 
+    /**
+     * Handles user registration confirmation
+     * Creates a new user account with the provided email
+     */
     public onConfirmCreateUser(): void {
         if (this.loginForm.valid) {
             const registerRequest: RegisterRequest = new RegisterRequest(this.loginForm.value.email);
@@ -79,16 +115,30 @@ export class LoginPageComponent {
         }
     }
 
+    /**
+     * Cancels user registration
+     * Hides the registration dialog and resets the form
+     */
     public onCancelCreateUser(): void {
         this.showCreateUserDialog = false;
         this.loginForm.patchValue({ email: '' });
     }
 
+    /**
+     * Checks if a form field is invalid and has been touched
+     * @param fieldName - Name of the form field to check
+     * @returns True if the field is invalid and touched/dirty
+     */
     public isFieldInvalid(fieldName: string): boolean {
         const field = this.loginForm.get(fieldName);
         return !!(field && field.invalid && (field.dirty || field.touched));
     }
 
+    /**
+     * Gets the error message for a form field
+     * @param fieldName - Name of the form field
+     * @returns Error message string or empty string if no error
+     */
     public getFieldError(fieldName: string): string {
         const field = this.loginForm.get(fieldName);
         if (field && field.errors) {

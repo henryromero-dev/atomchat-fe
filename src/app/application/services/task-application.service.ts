@@ -4,12 +4,52 @@ import { map, catchError, tap } from 'rxjs/operators';
 import { Task, CreateTaskRequest, UpdateTaskRequest } from '../../domain/entities';
 import { TASK_REPOSITORY, TaskRepository } from '../../domain/repositories';
 
+/**
+ * Interface representing the state of task operations
+ */
 export interface TaskState {
+    /** Array of user tasks */
     tasks: Task[];
+    /** Loading state indicator */
     isLoading: boolean;
+    /** Error message if any */
     error: string | null;
 }
 
+/**
+ * TaskApplicationService - Application service for task management
+ * 
+ * This service manages all task-related business logic and state management.
+ * It provides a centralized way to handle task operations including CRUD operations,
+ * state management, and error handling.
+ * 
+ * Features:
+ * - Centralized task state management using RxJS BehaviorSubject
+ * - CRUD operations for tasks (Create, Read, Update, Delete)
+ * - Task completion toggling
+ * - Loading and error state management
+ * - Reactive state updates for UI components
+ * 
+ * @example
+ * ```typescript
+ * // Inject the service
+ * private readonly taskService = inject(TaskApplicationService);
+ * 
+ * // Load tasks for a user
+ * this.taskService.loadTasks(userId);
+ * 
+ * // Subscribe to tasks
+ * this.taskService.getTasks().subscribe(tasks => {
+ *   console.log('Current tasks:', tasks);
+ * });
+ * 
+ * // Create a new task
+ * const request = new CreateTaskRequest('New Task', 'Description', userId);
+ * this.taskService.createTask(request).subscribe(task => {
+ *   console.log('Task created:', task);
+ * });
+ * ```
+ */
 @Injectable({
     providedIn: 'root'
 })
