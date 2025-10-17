@@ -1,3 +1,21 @@
 .app-toolbar {
     background: #3b3c4b;
+    min-height: 60px;
+    
+    // Responsive adjustments
+    @media (max-width: 767.98px) {
+        min-height: auto;
+        padding: 1rem !important;
+    }
+}
+
+:host ::ng-deep p-button {
+    button {
+        transition: all 0.3s ease;
+        
+        @media (max-width: 575.98px) {
+            width: 100% !important;
+            min-height: 40px;
+        }
+    }
 }
