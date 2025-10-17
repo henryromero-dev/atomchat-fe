@@ -7,44 +7,84 @@
                 <p class="text-muted mb-0">Enter your email to continue</p>
             </div>
 
-            <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="d-flex flex-column gap-3" role="form"
-                aria-label="Login form">
+            <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="d-flex flex-column gap-3" 
+                aria-label="Login form" novalidate>
                 <div class="d-flex flex-column gap-2">
-                    <label for="email" class="form-label fw-medium text-dark">Email Address</label>
-                    <input id="email" type="email" pInputText formControlName="email" placeholder="Enter your email"
-                        class="form-control" [class.is-invalid]="isFieldInvalid('email')" aria-describedby="email-error"
-                        aria-required="true" />
-                    <small *ngIf="isFieldInvalid('email')" class="text-danger" id="email-error" role="alert">
+                    <label for="email" class="form-label fw-medium text-dark">
+                        <span>Email Address</span>
+                        <span class="text-danger" aria-label="required">*</span>
+                    </label>
+                    <input 
+                        id="email" 
+                        type="email" 
+                        pInputText 
+                        formControlName="email" 
+                        placeholder="Enter your email"
+                        class="form-control" 
+                        [class.is-invalid]="isFieldInvalid('email')" 
+                        [attr.aria-describedby]="isFieldInvalid('email') ? 'email-error' : null"
+                        [attr.aria-invalid]="isFieldInvalid('email')"
+                        aria-required="true"
+                        autocomplete="email" />
+                    <small *ngIf="isFieldInvalid('email')" class="text-danger" id="email-error" role="alert" aria-live="polite">
                         {{ getFieldError('email') }}
                     </small>
                 </div>
 
-                <p-message *ngIf="(authState$ | async)?.error" severity="error"
-                    [text]="(authState$ | async)?.error || ''" role="alert" aria-live="polite"></p-message>
+                <div *ngIf="(authState$ | async)?.error" role="alert" aria-live="assertive" aria-atomic="true">
+                    <p-message severity="error"
+                        [text]="(authState$ | async)?.error || ''"></p-message>
+                </div>
 
                 <div class="d-flex">
-                    <p-button type="submit" label="Continue" [loading]="(authState$ | async)?.isLoading || false"
-                        [disabled]="loginForm.invalid || ((authState$ | async)?.isLoading || false)" class="w-100"
-                        aria-label="Continue with email"></p-button>
+                    <p-button 
+                        type="submit" 
+                        label="Continue" 
+                        [loading]="(authState$ | async)?.isLoading || false"
+                        [disabled]="loginForm.invalid || ((authState$ | async)?.isLoading || false)" 
+                        class="w-100"
+                        [attr.aria-label]="(authState$ | async)?.isLoading ? 'Signing in, please wait' : 'Continue with email'"
+                        [attr.aria-busy]="(authState$ | async)?.isLoading"></p-button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<p-dialog header="Register User" [(visible)]="showCreateUserDialog" [modal]="true" [closable]="false" [style]="{width: '400px'}" 
-    [draggable]="false" [resizable]="false">
+<p-dialog 
+    header="Register User" 
+    [(visible)]="showCreateUserDialog" 
+    [modal]="true" 
+    [closable]="false" 
+    [style]="{width: '400px'}" 
+    [draggable]="false" 
+    [resizable]="false"
+    role="dialog"
+    aria-labelledby="register-dialog-title"
+    aria-describedby="register-dialog-description"
+    [focusOnShow]="true">
+    <ng-template pTemplate="header">
+        <h2 id="register-dialog-title" class="h5 mb-0">Register User</h2>
+    </ng-template>
     <div class="d-flex flex-column gap-3">
-        <p class="mb-0">
-            We can't find an account with this email. <strong>{{ loginForm.value.email }}</strong>.
+        <p class="mb-0" id="register-dialog-description">
+            We can't find an account with this email: <strong>{{ loginForm.value.email }}</strong>.
             Do you want to create a new account?
         </p>
-        <div class="d-flex gap-2 justify-content-end">
-            <p-button label="Cancelar" severity="secondary" (onClick)="onCancelCreateUser()" 
-                [disabled]="(authState$ | async)?.isLoading || false"></p-button>
-            <p-button label="Create Account" (onClick)="onConfirmCreateUser()" 
+        <div class="d-flex gap-2 justify-content-end" role="group" aria-label="Account creation actions">
+            <p-button 
+                label="Cancel" 
+                severity="secondary" 
+                (onClick)="onCancelCreateUser()" 
+                [disabled]="(authState$ | async)?.isLoading || false"
+                aria-label="Cancel account creation"></p-button>
+            <p-button 
+                label="Create Account" 
+                (onClick)="onConfirmCreateUser()" 
                 [loading]="(authState$ | async)?.isLoading || false"
-                [disabled]="(authState$ | async)?.isLoading || false"></p-button>
+                [disabled]="(authState$ | async)?.isLoading || false"
+                [attr.aria-label]="(authState$ | async)?.isLoading ? 'Creating account, please wait' : 'Confirm account creation'"
+                [attr.aria-busy]="(authState$ | async)?.isLoading"></p-button>
         </div>
     </div>
 </p-dialog>
